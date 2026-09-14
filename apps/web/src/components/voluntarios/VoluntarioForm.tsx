@@ -10,6 +10,8 @@ import { criarVoluntario, atualizarVoluntario } from '../../services/voluntarioS
 import { listarEquipes, listarFuncoes } from '../../services/equipeService'
 import type { Voluntario } from '../../services/voluntarioService'
 import type { Equipe, Funcao } from '../../services/equipeService'
+import { ConviteEditor, CONVITE_VISUAL_PADRAO } from './ConviteEditor'
+import type { ConviteVisual } from './ConviteEditor'
 
 const schema = z.object({
   nome: z.string().min(1, 'Nome é obrigatório'),
@@ -20,7 +22,6 @@ const schema = z.object({
   funcaoId: z.string().optional(),
   tituloConvite: z.string().optional(),
   mensagemConvite: z.string().optional(),
-  arteUrl: z.string().optional(),
 })
 
 type FormValues = z.infer<typeof schema>
@@ -30,6 +31,20 @@ interface VoluntarioFormProps {
   voluntario?: Voluntario
   onSuccess: (voluntario: Voluntario) => void
   onCancel: () => void
+}
+
+/** Extrai o visual salvo do voluntário ou retorna o padrão */
+function visualDoVoluntario(v?: Voluntario): ConviteVisual {
+  if (!v) return CONVITE_VISUAL_PADRAO
+  try {
+    if (v.arteUrl && v.arteUrl.startsWith('{')) {
+      return JSON.parse(v.arteUrl) as ConviteVisual
+    }
+  } catch { /* fallback */ }
+  return {
+    ...CONVITE_VISUAL_PADRAO,
+    arteUrl: v.arteUrl ?? CONVITE_VISUAL_PADRAO.arteUrl,
+  }
 }
 
 export function VoluntarioForm({
@@ -42,6 +57,7 @@ export function VoluntarioForm({
 
   const [equipes, setEquipes] = useState<Equipe[]>([])
   const [funcoes, setFuncoes] = useState<Funcao[]>([])
+  const [visual, setVisual] = useState<ConviteVisual>(() => visualDoVoluntario(voluntario))
 
   useEffect(() => {
     listarEquipes(eventoId).then(setEquipes).catch(() => {})
@@ -52,6 +68,7 @@ export function VoluntarioForm({
     register,
     handleSubmit,
     reset,
+    watch,
     formState: { errors, isSubmitting },
   } = useForm<FormValues>({
     resolver: zodResolver(schema),
@@ -65,7 +82,6 @@ export function VoluntarioForm({
           funcaoId: voluntario.funcaoId ?? '',
           tituloConvite: voluntario.tituloConvite ?? '',
           mensagemConvite: voluntario.mensagemConvite ?? '',
-          arteUrl: voluntario.arteUrl ?? '',
         }
       : {
           nome: '',
@@ -76,7 +92,6 @@ export function VoluntarioForm({
           funcaoId: '',
           tituloConvite: '',
           mensagemConvite: '',
-          arteUrl: '',
         },
   })
 
@@ -91,10 +106,20 @@ export function VoluntarioForm({
         funcaoId: voluntario.funcaoId ?? '',
         tituloConvite: voluntario.tituloConvite ?? '',
         mensagemConvite: voluntario.mensagemConvite ?? '',
-        arteUrl: voluntario.arteUrl ?? '',
       })
+      setVisual(visualDoVoluntario(voluntario))
     }
   }, [voluntario, reset])
+
+  // Valores em tempo real para pré-visualização
+  const nomeWatch = watch('nome')
+  const tituloWatch = watch('tituloConvite')
+  const mensagemWatch = watch('mensagemConvite')
+  const equipeIdWatch = watch('equipeId')
+  const funcaoIdWatch = watch('funcaoId')
+
+  const equipeNome = equipes.find((e) => e.id === equipeIdWatch)?.nome ?? ''
+  const funcaoNome = funcoes.find((f) => f.id === funcaoIdWatch)?.nome ?? ''
 
   async function onSubmit(values: FormValues) {
     try {
@@ -107,7 +132,8 @@ export function VoluntarioForm({
         funcaoId: values.funcaoId || null,
         tituloConvite: values.tituloConvite || null,
         mensagemConvite: values.mensagemConvite || null,
-        arteUrl: values.arteUrl || null,
+        // Serializa o visual completo no campo arteUrl como JSON
+        arteUrl: JSON.stringify(visual),
       }
       const resultado = isEdicao
         ? await atualizarVoluntario(eventoId, voluntario!.id, payload)
@@ -131,9 +157,10 @@ export function VoluntarioForm({
   return (
     <Modal open onClose={onCancel} title={isEdicao ? 'Editar Voluntário' : 'Novo Voluntário'}>
       <form onSubmit={handleSubmit(onSubmit)} className="flex flex-col gap-4 max-h-[80vh] overflow-y-auto px-1">
+        {/* Dados Gerais */}
         <div className="flex flex-col gap-4">
           <h3 className="text-sm font-bold text-gray-800 border-b pb-1">Dados Gerais</h3>
-          
+
           <Input
             label="Nome *"
             placeholder="Nome completo"
@@ -184,9 +211,10 @@ export function VoluntarioForm({
           </div>
         </div>
 
+        {/* Mensagem do convite */}
         <div className="flex flex-col gap-4 mt-2">
-          <h3 className="text-sm font-bold text-gray-800 border-b pb-1">Visual e Mensagem do Convite</h3>
-          
+          <h3 className="text-sm font-bold text-gray-800 border-b pb-1">Mensagem do Convite</h3>
+
           <Input
             label="Título do Convite"
             placeholder="Ex: Você está sendo convidado(a) a servir"
@@ -203,12 +231,19 @@ export function VoluntarioForm({
               {...register('mensagemConvite')}
             />
           </div>
+        </div>
 
-          <Input
-            label="URL da Arte do Convite (Imagem)"
-            placeholder="Ex: /arteRetiroJovens.jpeg ou link de imagem externa"
-            error={errors.arteUrl?.message}
-            {...register('arteUrl')}
+        {/* Editor visual */}
+        <div className="flex flex-col gap-4 mt-2">
+          <h3 className="text-sm font-bold text-gray-800 border-b pb-1">Visual do Convite</h3>
+          <ConviteEditor
+            value={visual}
+            onChange={setVisual}
+            nomeExemplo={nomeWatch || voluntario?.nome || 'Nome do Voluntário'}
+            equipeExemplo={equipeNome}
+            funcaoExemplo={funcaoNome}
+            tituloExemplo={tituloWatch}
+            mensagemExemplo={mensagemWatch}
           />
         </div>
 

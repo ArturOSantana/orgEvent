@@ -3,6 +3,20 @@ import { useParams } from 'react-router-dom'
 import { buscarConvitePublico, responderConvite } from '../services/voluntarioService'
 import type { ConvitePublico } from '../services/voluntarioService'
 import { Spinner } from '../components/ui/Spinner'
+import type { ConviteVisual } from '../components/voluntarios/ConviteEditor'
+import { CONVITE_VISUAL_PADRAO } from '../components/voluntarios/ConviteEditor'
+
+// ── Extrai o visual do campo arteUrl (suporta JSON ou URL simples) ─────────────
+
+function extrairVisual(arteUrl: string | null | undefined): ConviteVisual {
+  if (!arteUrl) return CONVITE_VISUAL_PADRAO
+  if (arteUrl.startsWith('{')) {
+    try {
+      return JSON.parse(arteUrl) as ConviteVisual
+    } catch { /* fallback */ }
+  }
+  return { ...CONVITE_VISUAL_PADRAO, arteUrl }
+}
 
 // ── Utilitário ─────────────────────────────────────────────────────────────────
 
@@ -108,42 +122,45 @@ export function ConvitePage() {
 
   if (!convite) return null
 
+  const visual = extrairVisual(convite.arteUrl)
   const jaRespondeu = convite.statusConvite !== 'pendente' && !alterando
 
   return (
     <div
       className="min-h-screen flex items-center justify-center px-4 py-10"
-      style={{ background: 'linear-gradient(160deg, #121212 0%, #1a1408 100%)' }}
+      style={{ background: visual.fundoCor, fontFamily: visual.fonte }}
     >
       <div
         className="w-full max-w-md rounded-2xl overflow-hidden shadow-2xl"
-        style={{ background: '#1C1C1C', border: '1px solid #2a2510' }}
+        style={{ background: visual.cardCor, border: `1px solid ${visual.bordaCor}` }}
       >
-        {/* Faixa dourada topo */}
-        <div style={{ height: 4, background: 'linear-gradient(90deg, transparent, #C9A96E, transparent)' }} />
+        {/* Faixa de destaque topo */}
+        <div style={{ height: 4, background: `linear-gradient(90deg, transparent, ${visual.acentoCor}, transparent)` }} />
 
         {/* Arte do evento */}
-        <div className="w-full overflow-hidden bg-[#151515]">
-          <img
-            src={convite.arteUrl || "/arteRetiroJovens.jpeg"}
-            alt="Arte do Retiro de Jovens Fiat"
-            className="w-full h-auto object-contain"
-            style={{ display: 'block', maxHeight: '480px', margin: '0 auto' }}
-          />
-        </div>
+        {visual.arteUrl && (
+          <div className="w-full overflow-hidden" style={{ background: visual.fundoCor }}>
+            <img
+              src={visual.arteUrl}
+              alt="Arte do convite"
+              className="w-full h-auto object-contain"
+              style={{ display: 'block', maxHeight: '480px', margin: '0 auto' }}
+            />
+          </div>
+        )}
 
         {/* Cabeçalho — nome + equipe/função */}
-        <div className="px-8 pt-7 pb-6 text-center" style={{ borderBottom: '1px solid #2a2510' }}>
+        <div className="px-8 pt-7 pb-6 text-center" style={{ borderBottom: `1px solid ${visual.bordaCor}` }}>
           <p
             className="text-xs uppercase tracking-[0.2em] mb-3"
-            style={{ color: '#C9A96E' }}
+            style={{ color: visual.acentoCor }}
           >
             {convite.tituloConvite || "Você está sendo convidado(a) a servir"}
           </p>
 
           <h1
             className="text-2xl font-bold leading-tight mb-3"
-            style={{ color: '#F5F3EF', fontFamily: 'Georgia, serif' }}
+            style={{ color: visual.textoCor, fontFamily: visual.fonte }}
           >
             {convite.nome}
           </h1>
@@ -155,9 +172,9 @@ export function ConvitePage() {
                 <span
                   className="inline-flex items-center px-4 py-1 rounded-full text-xs font-semibold tracking-wide uppercase"
                   style={{
-                    background: 'rgba(201,169,110,0.15)',
-                    border: '1px solid rgba(201,169,110,0.4)',
-                    color: '#C9A96E',
+                    background: `${visual.acentoCor}22`,
+                    border: `1px solid ${visual.acentoCor}66`,
+                    color: visual.acentoCor,
                   }}
                 >
                   {convite.equipeNome}
@@ -166,7 +183,7 @@ export function ConvitePage() {
               {convite.funcaoNome && (
                 <span
                   className="text-sm"
-                  style={{ color: '#E5B499' }}
+                  style={{ color: visual.acentoCor, opacity: 0.85 }}
                 >
                   {convite.funcaoNome}
                 </span>
@@ -180,7 +197,7 @@ export function ConvitePage() {
           {/* Citação */}
           <p
             className="text-sm text-center mb-6 leading-relaxed italic whitespace-pre-line"
-            style={{ color: '#9E9E9E', fontFamily: 'Georgia, serif' }}
+            style={{ color: visual.textoCor, opacity: 0.65, fontFamily: visual.fonte }}
           >
             {convite.mensagemConvite || '"Faça-se em mim segundo a Tua Palavra." — Lc 1,38'}
           </p>
@@ -194,15 +211,15 @@ export function ConvitePage() {
           {convite.statusConvite !== 'pendente' && !alterando && (
             <div
               className="rounded-lg px-4 py-3 mb-5 text-sm"
-              style={{ background: '#151515', border: '1px solid #2a2510' }}
+              style={{ background: visual.fundoCor, border: `1px solid ${visual.bordaCor}` }}
             >
               {convite.observacaoConvite && (
-                <p className="text-gray-300 mb-1">
-                  <span style={{ color: '#C9A96E' }}>Obs:</span> {convite.observacaoConvite}
+                <p className="mb-1" style={{ color: visual.textoCor, opacity: 0.85 }}>
+                  <span style={{ color: visual.acentoCor }}>Obs:</span> {convite.observacaoConvite}
                 </p>
               )}
               {convite.dataResposta && (
-                <p className="text-gray-500 text-xs">
+                <p className="text-xs" style={{ color: visual.textoCor, opacity: 0.45 }}>
                   Respondido em {formatarData(convite.dataResposta)}
                 </p>
               )}
@@ -213,7 +230,7 @@ export function ConvitePage() {
           {!jaRespondeu && (
             <div className="flex flex-col gap-3">
               <div className="flex flex-col gap-1">
-                <label className="text-xs" style={{ color: '#9E9E9E' }}>
+                <label className="text-xs" style={{ color: visual.textoCor, opacity: 0.6 }}>
                   Observação (opcional)
                 </label>
                 <textarea
@@ -223,10 +240,10 @@ export function ConvitePage() {
                   placeholder="Alguma observação ou recado..."
                   className="w-full rounded-lg px-3 py-2 text-sm resize-none focus:outline-none focus:ring-1"
                   style={{
-                    background: '#151515',
-                    border: '1px solid #2a2510',
-                    color: '#F5F3EF',
-                    caretColor: '#C9A96E',
+                    background: visual.fundoCor,
+                    border: `1px solid ${visual.bordaCor}`,
+                    color: visual.textoCor,
+                    caretColor: visual.acentoCor,
                   }}
                 />
               </div>
@@ -235,7 +252,7 @@ export function ConvitePage() {
                 onClick={() => enviarResposta('aceito')}
                 disabled={enviando !== null}
                 className="w-full rounded-lg py-3 text-sm font-semibold transition-opacity disabled:opacity-50"
-                style={{ background: '#C9A96E', color: '#121212' }}
+                style={{ background: visual.acentoCor, color: visual.fundoCor }}
               >
                 {enviando === 'aceito' ? 'Registrando...' : '✓ Sim, Aceito Servir'}
               </button>
@@ -244,7 +261,7 @@ export function ConvitePage() {
                 onClick={() => enviarResposta('recusado')}
                 disabled={enviando !== null}
                 className="w-full rounded-lg py-3 text-sm font-medium transition-opacity disabled:opacity-50"
-                style={{ background: '#1f1f1f', color: '#9E9E9E', border: '1px solid #2a2510' }}
+                style={{ background: visual.fundoCor, color: visual.textoCor, opacity: 0.7, border: `1px solid ${visual.bordaCor}` }}
               >
                 {enviando === 'recusado' ? 'Registrando...' : 'Não poderei participar'}
               </button>
@@ -257,7 +274,7 @@ export function ConvitePage() {
               <button
                 onClick={() => setAlterando(true)}
                 className="text-xs underline underline-offset-2"
-                style={{ color: '#9E9E9E' }}
+                style={{ color: visual.textoCor, opacity: 0.55 }}
               >
                 Deseja alterar sua resposta?
               </button>
@@ -268,11 +285,11 @@ export function ConvitePage() {
         {/* Rodapé */}
         <div
           className="px-8 py-4 text-center text-xs"
-          style={{ color: '#9E9E9E', borderTop: '1px solid #2a2510' }}
+          style={{ color: visual.textoCor, opacity: 0.4, borderTop: `1px solid ${visual.bordaCor}` }}
         >
           Retiro de Jovens · Fiat
           {convite.visualizadoEm && (
-            <span className="block mt-0.5 text-gray-600">
+            <span className="block mt-0.5" style={{ opacity: 0.7 }}>
               Convite aberto em {formatarData(convite.visualizadoEm)}
             </span>
           )}
