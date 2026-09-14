@@ -1,0 +1,13 @@
+{
+  "version": "7",
+  "dialect": "postgresql",
+  "entries": [
+    {
+      "idx": 0,
+      "version": "7",
+      "when": 1789355921585,
+      "tag": "0000_windy_captain_cross",
+      "breakpoints": true
+    }
+  ]
+}

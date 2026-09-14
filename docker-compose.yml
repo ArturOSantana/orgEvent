@@ -1,0 +1,39 @@
+# ATENCAO: Este arquivo e apenas para DESENVOLVIMENTO LOCAL.
+# Em producao, NUNCA use secrets hardcoded aqui.
+# Todos os valores sensiveis devem vir de variaveis de ambiente reais
+# ou de um gerenciador de secrets (HashiCorp Vault, IBM Key Protect, etc.)
+
+version: '3.9'
+
+services:
+  postgres:
+    image: registry.redhat.io/rhel9/postgresql-15:latest
+    environment:
+      POSTGRESQL_USER: gestor
+      POSTGRESQL_PASSWORD: gestor_dev_senha
+      POSTGRESQL_DATABASE: gestoreventos
+    ports:
+      - "127.0.0.1:5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    restart: unless-stopped
+
+  api:
+    build:
+      context: .
+      dockerfile: apps/api/Dockerfile
+    environment:
+      DATABASE_URL: postgresql://gestor:gestor_dev_senha@postgres:5432/gestoreventos
+      # TROCAR estes valores antes de qualquer deploy em producao
+      JWT_SECRET: trocar_antes_de_ir_para_producao
+      JWT_REFRESH_SECRET: trocar_refresh_antes_de_producao
+      PORT: 3001
+      CORS_ORIGIN: http://localhost:5173
+    ports:
+      - "127.0.0.1:3001:3001"
+    depends_on:
+      - postgres
+    restart: unless-stopped
+
+volumes:
+  postgres_data:
