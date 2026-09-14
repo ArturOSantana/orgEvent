@@ -21,9 +21,10 @@ interface EquipeDetailProps {
   onClose: () => void
   onEditar?: (equipe: Equipe) => void
   onApagada?: (equipeId: string) => void
+  onMembrosAlterados?: (equipe: Equipe) => void
 }
 
-export function EquipeDetail({ eventoId, equipeId, podeEditar, onClose, onEditar, onApagada }: EquipeDetailProps) {
+export function EquipeDetail({ eventoId, equipeId, podeEditar, onClose, onEditar, onApagada, onMembrosAlterados }: EquipeDetailProps) {
   const [equipe, setEquipe] = useState<Equipe | null>(null)
   const [funcoes, setFuncoes] = useState<Funcao[]>([])
   const [carregando, setCarregando] = useState(true)
@@ -58,15 +59,16 @@ export function EquipeDetail({ eventoId, equipeId, podeEditar, onClose, onEditar
     if (!confirmado) return
     try {
       await removerMembro(eventoId, equipeId, membro.id)
-      setEquipe((prev) =>
-        prev
-          ? {
-              ...prev,
-              membros: prev.membros?.filter((m) => m.id !== membro.id),
-              _count: { membros: (prev._count?.membros ?? 1) - 1 },
-            }
-          : prev,
-      )
+      setEquipe((prev) => {
+        if (!prev) return prev
+        const atualizada = {
+          ...prev,
+          membros: prev.membros?.filter((m) => m.id !== membro.id),
+          _count: { membros: (prev._count?.membros ?? 1) - 1 },
+        }
+        onMembrosAlterados?.(atualizada)
+        return atualizada
+      })
     } catch {
       alert('Nao foi possivel remover o membro. Tente novamente.')
     }
@@ -87,9 +89,13 @@ export function EquipeDetail({ eventoId, equipeId, podeEditar, onClose, onEditar
     }
   }
 
-  function handleMembroAdicionado() {
+  async function handleMembroAdicionado() {
     setAdicionarMembroAberto(false)
-    carregar()
+    await carregar()
+    setEquipe((prev) => {
+      if (prev) onMembrosAlterados?.(prev)
+      return prev
+    })
   }
 
   function exportarPDF() {

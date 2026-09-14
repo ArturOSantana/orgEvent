@@ -80,6 +80,10 @@ export function EquipesPage() {
     setEquipeDetalheId(null)
   }
 
+  function handleMembrosAlterados(equipeAtualizada: Equipe) {
+    setEquipes((prev) => prev.map((e) => (e.id === equipeAtualizada.id ? equipeAtualizada : e)))
+  }
+
   function handleFuncaoCriada(funcao: Funcao) {
     setFuncoes((prev) => [...prev, funcao])
     setModalFuncaoAberto(false)
@@ -195,6 +199,7 @@ export function EquipesPage() {
                 onClose={() => setEquipeDetalheId(null)}
                 onEditar={handleEditarEquipe}
                 onApagada={handleEquipeApagada}
+                onMembrosAlterados={handleMembrosAlterados}
               />
             </div>
           )}
@@ -211,6 +216,7 @@ export function EquipesPage() {
             onClose={() => setEquipeDetalheId(null)}
             onEditar={handleEditarEquipe}
             onApagada={handleEquipeApagada}
+            onMembrosAlterados={handleMembrosAlterados}
           />
         </div>
       )}
