@@ -4,14 +4,14 @@
   "installCommand": "npm install",
   "framework": null,
   "functions": {
-    "apps/api/api/index.ts": {
+    "api/index.ts": {
       "memory": 512,
       "maxDuration": 30
     }
   },
   "rewrites": [
-    { "source": "/auth/:path*", "destination": "/apps/api/api/index.ts" },
-    { "source": "/api/:path*", "destination": "/apps/api/api/index.ts" },
+    { "source": "/auth/:path*", "destination": "/api/index.ts" },
+    { "source": "/api/:path*", "destination": "/api/index.ts" },
     { "source": "/((?!_next|assets|favicon|icon|manifest|sw\\.js|workbox).*)", "destination": "/index.html" }
   ]
 }
