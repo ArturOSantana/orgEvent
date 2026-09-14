@@ -33,6 +33,9 @@ export interface ConvitePublico {
   funcaoNome: string | null
   eventoId: string | null
   eventoNome: string | null
+  eventoDataInicio: string | null
+  eventoDataFim: string | null
+  eventoLocal: string | null
   tituloConvite: string | null
   mensagemConvite: string | null
   arteUrl: string | null

@@ -5,6 +5,7 @@ import {
   text,
   timestamp,
   uniqueIndex,
+  index,
 } from 'drizzle-orm/pg-core';
 import { eventos } from './eventos.js';
 
@@ -34,6 +35,7 @@ export const voluntarios = pgTable(
   'voluntarios',
   {
     id: uuid('id').primaryKey().defaultRandom(),
+    eventoId: uuid('evento_id').references(() => eventos.id),
     nome: varchar('nome', { length: 200 }).notNull(),
     telefone: varchar('telefone', { length: 20 }),
     email: varchar('email', { length: 300 }),
@@ -52,6 +54,7 @@ export const voluntarios = pgTable(
   },
   (t) => [
     uniqueIndex('voluntarios_slug_idx').on(t.slug),
+    index('voluntarios_evento_id_idx').on(t.eventoId),
   ],
 );
 

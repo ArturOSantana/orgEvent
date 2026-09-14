@@ -1,6 +1,6 @@
-import { eq } from 'drizzle-orm'
+import { eq, or } from 'drizzle-orm'
 import { db } from '../db/index.js'
-import { voluntarios, equipeVoluntarios, equipes, funcoes } from '../db/schema/index.js'
+import { voluntarios, equipeVoluntarios, equipes, funcoes, eventos } from '../db/schema/index.js'
 
 // ── Geração de slug ────────────────────────────────────────────────────────────
 
@@ -54,6 +54,9 @@ export interface ConvitePublico {
   funcaoNome: string | null
   eventoId: string | null
   eventoNome: string | null
+  eventoDataInicio: Date | null
+  eventoDataFim: Date | null
+  eventoLocal: string | null
   tituloConvite: string | null
   mensagemConvite: string | null
   arteUrl: string | null
@@ -92,7 +95,7 @@ export class ConviteService {
 
     if (!vol) return null
 
-    // Busca equipe e função do voluntário (pode estar em múltiplas equipes — pega a primeira)
+    // Busca equipe, função e evento do voluntário (pega a primeira alocação)
     const membros = await db
       .select({
         equipeNome: equipes.nome,
@@ -107,6 +110,32 @@ export class ConviteService {
 
     const membro = membros[0] ?? null
 
+    // Busca dados do evento (nome, datas, local)
+    let eventoNome: string | null = null
+    let eventoDataInicio: Date | null = null
+    let eventoDataFim: Date | null = null
+    let eventoLocal: string | null = null
+
+    if (membro?.eventoId) {
+      const [evento] = await db
+        .select({
+          nome: eventos.nome,
+          dataInicio: eventos.dataInicio,
+          dataFim: eventos.dataFim,
+          local: eventos.local,
+        })
+        .from(eventos)
+        .where(eq(eventos.id, membro.eventoId))
+        .limit(1)
+
+      if (evento) {
+        eventoNome = evento.nome
+        eventoDataInicio = evento.dataInicio
+        eventoDataFim = evento.dataFim
+        eventoLocal = evento.local ?? null
+      }
+    }
+
     return {
       id: vol.id,
       nome: vol.nome,
@@ -118,7 +147,10 @@ export class ConviteService {
       equipeNome: membro?.equipeNome ?? null,
       funcaoNome: membro?.funcaoNome ?? null,
       eventoId: membro?.eventoId ?? null,
-      eventoNome: null, // enriquecido abaixo se necessário
+      eventoNome,
+      eventoDataInicio,
+      eventoDataFim,
+      eventoLocal,
       tituloConvite: vol.tituloConvite ?? null,
       mensagemConvite: vol.mensagemConvite ?? null,
       arteUrl: vol.arteUrl ?? null,
@@ -171,7 +203,7 @@ export class ConviteService {
   // Listar voluntários de um evento com dados de convite (para o admin)
   async listarComConvite(eventoId: string) {
     const rows = await db
-      .select({
+      .selectDistinct({
         id: voluntarios.id,
         nome: voluntarios.nome,
         email: voluntarios.email,
@@ -191,9 +223,14 @@ export class ConviteService {
         funcaoId: equipeVoluntarios.funcaoId,
       })
       .from(voluntarios)
-      .innerJoin(equipeVoluntarios, eq(equipeVoluntarios.voluntarioId, voluntarios.id))
-      .innerJoin(equipes, eq(equipes.id, equipeVoluntarios.equipeId))
-      .where(eq(equipes.eventoId, eventoId))
+      .leftJoin(equipeVoluntarios, eq(equipeVoluntarios.voluntarioId, voluntarios.id))
+      .leftJoin(equipes, eq(equipes.id, equipeVoluntarios.equipeId))
+      .where(
+        or(
+          eq(voluntarios.eventoId, eventoId),
+          eq(equipes.eventoId, eventoId),
+        ),
+      )
 
     return rows
   }

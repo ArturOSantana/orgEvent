@@ -226,6 +226,18 @@ function Preview({
         )}
       </div>
 
+      {/* Data e local — exemplo fixo para pré-visualização */}
+      <div style={{ padding: '10px 24px', borderBottom: `1px solid ${v.bordaCor}`, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 6 }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+          <span style={{ color: v.acentoCor, fontSize: 12 }}>📅</span>
+          <span style={{ fontSize: 11, fontWeight: 600, color: v.textoCor }}>Data e horário do evento</span>
+        </div>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+          <span style={{ color: v.acentoCor, fontSize: 12 }}>📍</span>
+          <span style={{ fontSize: 11, color: v.textoCor, opacity: 0.8 }}>Local do evento</span>
+        </div>
+      </div>
+
       {/* Corpo */}
       <div style={{ padding: '14px 24px' }}>
         <p style={{ fontSize: 11, textAlign: 'center', fontStyle: 'italic', color: v.textoCor, opacity: 0.6, marginBottom: 14 }}>

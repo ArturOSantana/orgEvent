@@ -297,3 +297,7 @@ ALTER TABLE "voluntarios" ADD COLUMN IF NOT EXISTS "titulo_convite" text;
 ALTER TABLE "voluntarios" ADD COLUMN IF NOT EXISTS "mensagem_convite" text;
 ALTER TABLE "voluntarios" ADD COLUMN IF NOT EXISTS "arte_url" text;
 CREATE UNIQUE INDEX IF NOT EXISTS "voluntarios_slug_idx" ON "voluntarios" USING btree ("slug");
+
+-- Adiciona evento_id na tabela voluntarios para rastrear o evento mesmo sem equipe
+ALTER TABLE "voluntarios" ADD COLUMN IF NOT EXISTS "evento_id" uuid REFERENCES "public"."eventos"("id");
+CREATE INDEX IF NOT EXISTS "voluntarios_evento_id_idx" ON "voluntarios" USING btree ("evento_id");

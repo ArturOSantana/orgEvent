@@ -18,7 +18,7 @@ function extrairVisual(arteUrl: string | null | undefined): ConviteVisual {
   return { ...CONVITE_VISUAL_PADRAO, arteUrl }
 }
 
-// ── Utilitário ─────────────────────────────────────────────────────────────────
+// ── Utilitários ────────────────────────────────────────────────────────────────
 
 function formatarData(iso: string | null | undefined): string {
   if (!iso) return ''
@@ -29,6 +29,31 @@ function formatarData(iso: string | null | undefined): string {
     hour: '2-digit',
     minute: '2-digit',
   })
+}
+
+/** Formata datas do evento: se mesmo dia exibe só um; se dias diferentes exibe intervalo */
+function formatarPeriodoEvento(inicio: string | null, fim: string | null): string {
+  if (!inicio) return ''
+  const di = new Date(inicio)
+  const df = fim ? new Date(fim) : null
+
+  const opcoesDia: Intl.DateTimeFormatOptions = { day: '2-digit', month: 'long', year: 'numeric' }
+  const opcoesDiaHora: Intl.DateTimeFormatOptions = { day: '2-digit', month: 'long', year: 'numeric', hour: '2-digit', minute: '2-digit' }
+
+  if (!df) return di.toLocaleDateString('pt-BR', opcoesDiaHora)
+
+  const mesmodia =
+    di.getFullYear() === df.getFullYear() &&
+    di.getMonth() === df.getMonth() &&
+    di.getDate() === df.getDate()
+
+  if (mesmodia) {
+    const hora = (d: Date) =>
+      d.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })
+    return `${di.toLocaleDateString('pt-BR', opcoesDia)} · ${hora(di)} às ${hora(df)}`
+  }
+
+  return `${di.toLocaleDateString('pt-BR', { day: '2-digit', month: 'short' })} a ${df.toLocaleDateString('pt-BR', { day: '2-digit', month: 'short', year: 'numeric' })}`
 }
 
 // ── Badge de status ────────────────────────────────────────────────────────────
@@ -191,6 +216,37 @@ export function ConvitePage() {
             </div>
           )}
         </div>
+
+        {/* Data e local do evento */}
+        {(convite.eventoDataInicio || convite.eventoLocal) && (
+          <div
+            className="px-8 py-4 flex flex-col items-center gap-2"
+            style={{ borderBottom: `1px solid ${visual.bordaCor}` }}
+          >
+            {convite.eventoDataInicio && (
+              <div className="flex items-center gap-2">
+                <span style={{ color: visual.acentoCor, fontSize: 14 }}>📅</span>
+                <span
+                  className="text-sm font-medium"
+                  style={{ color: visual.textoCor }}
+                >
+                  {formatarPeriodoEvento(convite.eventoDataInicio, convite.eventoDataFim)}
+                </span>
+              </div>
+            )}
+            {convite.eventoLocal && (
+              <div className="flex items-center gap-2">
+                <span style={{ color: visual.acentoCor, fontSize: 14 }}>📍</span>
+                <span
+                  className="text-sm"
+                  style={{ color: visual.textoCor, opacity: 0.8 }}
+                >
+                  {convite.eventoLocal}
+                </span>
+              </div>
+            )}
+          </div>
+        )}
 
         {/* Corpo */}
         <div className="px-8 py-6">

@@ -15,19 +15,20 @@ export class VoluntarioService {
     const limit = Math.min(100, Math.max(1, filtros.limit ?? 20))
     const offset = (page - 1) * limit
 
-    // Voluntarios vinculados ao evento via equipe_voluntarios -> equipes
-    const conditions: ReturnType<typeof eq>[] = [eq(equipes.eventoId, eventoId)]
+    // Voluntários vinculados diretamente ao evento ou via equipe
+    const eventoCondition = or(
+      eq(voluntarios.eventoId, eventoId),
+      eq(equipes.eventoId, eventoId),
+    )!
 
-    if (filtros.busca) {
-      conditions.push(
-        or(
+    const buscaCondition = filtros.busca
+      ? or(
           ilike(voluntarios.nome, `%${filtros.busca}%`),
           ilike(sql`coalesce(${voluntarios.email}, '')`, `%${filtros.busca}%`),
-        )! as ReturnType<typeof eq>,
-      )
-    }
+        )
+      : undefined
 
-    const where = and(...conditions)
+    const where = buscaCondition ? and(eventoCondition, buscaCondition) : eventoCondition
 
     const rows = await db
       .selectDistinct({
@@ -40,8 +41,8 @@ export class VoluntarioService {
         atualizadoEm: voluntarios.atualizadoEm,
       })
       .from(voluntarios)
-      .innerJoin(equipeVoluntarios, eq(equipeVoluntarios.voluntarioId, voluntarios.id))
-      .innerJoin(equipes, eq(equipes.id, equipeVoluntarios.equipeId))
+      .leftJoin(equipeVoluntarios, eq(equipeVoluntarios.voluntarioId, voluntarios.id))
+      .leftJoin(equipes, eq(equipes.id, equipeVoluntarios.equipeId))
       .where(where)
       .limit(limit)
       .offset(offset)
@@ -49,8 +50,8 @@ export class VoluntarioService {
     const [{ count }] = await db
       .select({ count: sql<number>`count(distinct ${voluntarios.id})::int` })
       .from(voluntarios)
-      .innerJoin(equipeVoluntarios, eq(equipeVoluntarios.voluntarioId, voluntarios.id))
-      .innerJoin(equipes, eq(equipes.id, equipeVoluntarios.equipeId))
+      .leftJoin(equipeVoluntarios, eq(equipeVoluntarios.voluntarioId, voluntarios.id))
+      .leftJoin(equipes, eq(equipes.id, equipeVoluntarios.equipeId))
       .where(where)
 
     return { data: rows, total: count, page, limit }
@@ -123,6 +124,7 @@ export class VoluntarioService {
         await db
           .update(voluntarios)
           .set({
+            eventoId,
             nome: dados.nome,
             telefone: dados.telefone || existente.telefone,
             obs: dados.obs || existente.obs,
@@ -139,6 +141,7 @@ export class VoluntarioService {
       const [criado] = await db
         .insert(voluntarios)
         .values({
+          eventoId,
           nome: dados.nome,
           email: dados.email,
           telefone: dados.telefone,
