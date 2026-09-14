@@ -138,3 +138,4 @@ packages/
 - Todas as portas expostas escutam em `127.0.0.1`, nunca em `0.0.0.0`
 - Rate limiting ativo: 100 req/min globais, 10 req/min nas rotas de autenticacao por IP
 # orgEvent
+# orgEvent
