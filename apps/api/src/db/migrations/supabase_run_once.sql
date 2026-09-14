@@ -301,3 +301,27 @@ CREATE UNIQUE INDEX IF NOT EXISTS "voluntarios_slug_idx" ON "voluntarios" USING 
 -- Adiciona evento_id na tabela voluntarios para rastrear o evento mesmo sem equipe
 ALTER TABLE "voluntarios" ADD COLUMN IF NOT EXISTS "evento_id" uuid REFERENCES "public"."eventos"("id");
 CREATE INDEX IF NOT EXISTS "voluntarios_evento_id_idx" ON "voluntarios" USING btree ("evento_id");
+
+-- Criar tabela de quartos
+CREATE TABLE IF NOT EXISTS "quartos" (
+  "id" uuid PRIMARY KEY DEFAULT gen_random_uuid() NOT NULL,
+  "evento_id" uuid NOT NULL REFERENCES "public"."eventos"("id") ON DELETE CASCADE,
+  "nome" varchar(200) NOT NULL,
+  "genero" varchar(20) DEFAULT 'misto',
+  "capacidade" integer DEFAULT 4 NOT NULL,
+  "responsavel_nome" varchar(200),
+  "localizacao" varchar(200),
+  "obs" text,
+  "criado_em" timestamp DEFAULT now() NOT NULL,
+  "atualizado_em" timestamp DEFAULT now() NOT NULL
+);
+
+-- Adicionar colunas quarto_id e inscricao_id em participantes se não existirem
+ALTER TABLE "participantes" ADD COLUMN IF NOT EXISTS "quarto_id" uuid REFERENCES "public"."quartos"("id") ON DELETE SET NULL;
+ALTER TABLE "participantes" ADD COLUMN IF NOT EXISTS "inscricao_id" uuid;
+
+-- Limpar inscritos e participantes
+-- Ordem: filhos antes dos pais (foreign keys)
+DELETE FROM "respostas_inscricao";
+DELETE FROM "inscricoes";
+DELETE FROM "participantes";

@@ -26,9 +26,10 @@ export class EquipeService {
     const [equipe] = await db.select().from(equipes).where(eq(equipes.id, id)).limit(1)
     if (!equipe) return null
 
-    const membros = await db
+    const rows = await db
       .select({
         id: equipeVoluntarios.id,
+        equipeId: equipeVoluntarios.equipeId,
         voluntarioId: equipeVoluntarios.voluntarioId,
         funcaoId: equipeVoluntarios.funcaoId,
         voluntarioNome: voluntarios.nome,
@@ -40,6 +41,20 @@ export class EquipeService {
       .leftJoin(voluntarios, eq(voluntarios.id, equipeVoluntarios.voluntarioId))
       .leftJoin(funcoes, eq(funcoes.id, equipeVoluntarios.funcaoId))
       .where(eq(equipeVoluntarios.equipeId, id))
+
+    const membros = rows.map((r) => ({
+      id: r.id,
+      equipeId: r.equipeId,
+      voluntarioId: r.voluntarioId,
+      funcaoId: r.funcaoId ?? undefined,
+      voluntario: {
+        id: r.voluntarioId,
+        nome: r.voluntarioNome ?? '',
+        email: r.voluntarioEmail ?? undefined,
+        telefone: r.voluntarioTelefone ?? undefined,
+      },
+      funcao: r.funcaoId && r.funcaoNome ? { id: r.funcaoId, nome: r.funcaoNome } : undefined,
+    }))
 
     return { ...equipe, membros }
   }
