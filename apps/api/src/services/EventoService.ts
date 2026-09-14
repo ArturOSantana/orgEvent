@@ -7,7 +7,16 @@ import {
   participantes,
   equipes,
   equipeVoluntarios,
+  funcoes,
+  voluntarios,
+  fases,
+  horarios,
+  materiais,
+  observacoes,
   inscricoes,
+  formulariosInscricao,
+  camposFormulario,
+  respostasInscricao,
 } from '../db/schema/index.js'
 
 export interface FiltrosEvento {
@@ -153,6 +162,77 @@ export class EventoService {
       .where(eq(eventos.id, id))
       .returning()
     return updated ?? null
+  }
+
+  async apagar(id: string) {
+    // Deleta em ordem para respeitar as foreign keys
+    await db.transaction(async (tx) => {
+      // 1. Buscar formulario do evento (pode nao existir)
+      const [formulario] = await tx
+        .select({ id: formulariosInscricao.id })
+        .from(formulariosInscricao)
+        .where(eq(formulariosInscricao.eventoId, id))
+        .limit(1)
+
+      if (formulario) {
+        // 2. Respostas de inscricao (FK → inscricoes + campos_formulario)
+        const idsInscricoes = await tx
+          .select({ id: inscricoes.id })
+          .from(inscricoes)
+          .where(eq(inscricoes.eventoId, id))
+        if (idsInscricoes.length > 0) {
+          await tx
+            .delete(respostasInscricao)
+            .where(inArray(respostasInscricao.inscricaoId, idsInscricoes.map((i) => i.id)))
+        }
+        // 3. Inscricoes
+        await tx.delete(inscricoes).where(eq(inscricoes.eventoId, id))
+        // 4. Campos do formulario
+        await tx.delete(camposFormulario).where(eq(camposFormulario.formularioId, formulario.id))
+        // 5. Formulario
+        await tx.delete(formulariosInscricao).where(eq(formulariosInscricao.id, formulario.id))
+      }
+
+      // 6. Buscar IDs das equipes para deletar equipe_voluntarios e voluntarios
+      const idsEquipes = await tx
+        .select({ id: equipes.id })
+        .from(equipes)
+        .where(eq(equipes.eventoId, id))
+
+      if (idsEquipes.length > 0) {
+        const equipeIds = idsEquipes.map((e) => e.id)
+        // 7. Buscar voluntarios vinculados antes de remover o vinculo
+        const idsVoluntarios = await tx
+          .select({ voluntarioId: equipeVoluntarios.voluntarioId })
+          .from(equipeVoluntarios)
+          .where(inArray(equipeVoluntarios.equipeId, equipeIds))
+        // 8. Remover vinculos equipe_voluntarios
+        await tx.delete(equipeVoluntarios).where(inArray(equipeVoluntarios.equipeId, equipeIds))
+        // 9. Remover voluntarios (sem outro evento vinculado via equipe)
+        if (idsVoluntarios.length > 0) {
+          const volIds = [...new Set(idsVoluntarios.map((v) => v.voluntarioId))]
+          await tx.delete(voluntarios).where(inArray(voluntarios.id, volIds))
+        }
+      }
+
+      // 10. Participantes
+      await tx.delete(participantes).where(eq(participantes.eventoId, id))
+      // 11. Equipes
+      await tx.delete(equipes).where(eq(equipes.eventoId, id))
+      // 12. Funcoes
+      await tx.delete(funcoes).where(eq(funcoes.eventoId, id))
+      // 13. Horarios (antes das fases pois faseId e nullable, mas horarios referenciam eventos)
+      await tx.delete(horarios).where(eq(horarios.eventoId, id))
+      // 14. Fases
+      await tx.delete(fases).where(eq(fases.eventoId, id))
+      // 15. Materiais e observacoes
+      await tx.delete(materiais).where(eq(materiais.eventoId, id))
+      await tx.delete(observacoes).where(eq(observacoes.eventoId, id))
+      // 16. Vinculos evento_usuarios
+      await tx.delete(eventoUsuarios).where(eq(eventoUsuarios.eventoId, id))
+      // 17. Evento
+      await tx.delete(eventos).where(eq(eventos.id, id))
+    })
   }
 
   async desarquivar(id: string) {

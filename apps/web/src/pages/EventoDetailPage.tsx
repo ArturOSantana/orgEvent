@@ -7,8 +7,9 @@ import {
   UserAddOutlined,
   ExclamationCircleOutlined,
   FormOutlined,
+  DeleteOutlined,
 } from '@ant-design/icons'
-import { buscarEvento, arquivarEvento, desarquivarEvento } from '../services/eventoService'
+import { buscarEvento, arquivarEvento, desarquivarEvento, apagarEvento } from '../services/eventoService'
 import type { EventoDetalhado } from '../services/eventoService'
 import { EventoStatusBadge } from '../components/eventos/EventoStatusBadge'
 import { EventoForm } from '../components/eventos/EventoForm'
@@ -53,8 +54,10 @@ export function EventoDetailPage() {
   const [modalEdicao, setModalEdicao] = useState(false)
   const [modalColaborador, setModalColaborador] = useState(false)
   const [modalArquivar, setModalArquivar] = useState(false)
+  const [modalApagar, setModalApagar] = useState(false)
   const [arquivando, setArquivando] = useState(false)
   const [reativando, setReativando] = useState(false)
+  const [apagando, setApagando] = useState(false)
 
   const isCoordenador =
     usuario?.perfil === 'coordenador' || usuario?.perfil === 'admin'
@@ -115,6 +118,19 @@ export function EventoDetailPage() {
       alert('Não foi possível reativar o evento. Tente novamente.')
     } finally {
       setReativando(false)
+    }
+  }
+
+  async function handleApagar() {
+    if (!eventoId) return
+    setApagando(true)
+    try {
+      await apagarEvento(eventoId)
+      navigate('/eventos')
+    } catch {
+      alert('Não foi possível apagar o evento. Tente novamente.')
+    } finally {
+      setApagando(false)
     }
   }
 
@@ -196,6 +212,14 @@ export function EventoDetailPage() {
                     onClick={() => setModalEdicao(true)}
                   >
                     Editar
+                  </Button>
+                  <Button
+                    variant="danger"
+                    size="sm"
+                    icon={<DeleteOutlined />}
+                    onClick={() => setModalApagar(true)}
+                  >
+                    Apagar evento
                   </Button>
                   {evento.status === 'arquivado' ? (
                     <Button
@@ -311,6 +335,37 @@ export function EventoDetailPage() {
           }}
         />
       )}
+
+      {/* Modal de confirmacao de apagar */}
+      <Modal
+        open={modalApagar}
+        onClose={() => setModalApagar(false)}
+        title="Apagar evento"
+        footer={
+          <>
+            <Button
+              variant="ghost"
+              onClick={() => setModalApagar(false)}
+              disabled={apagando}
+            >
+              Cancelar
+            </Button>
+            <Button variant="danger" loading={apagando} onClick={handleApagar}>
+              Apagar permanentemente
+            </Button>
+          </>
+        }
+      >
+        <p className="text-sm text-gray-700">
+          Tem certeza que deseja apagar o evento{' '}
+          <strong>{evento.nome}</strong>?{' '}
+          <span className="text-red-600 font-medium">
+            Esta ação é irreversível
+          </span>{' '}
+          e removerá todos os dados relacionados: participantes, equipes,
+          voluntários, cronograma, materiais, inscrições e colaboradores.
+        </p>
+      </Modal>
 
       {/* Modal de confirmacao de arquivamento */}
       <Modal

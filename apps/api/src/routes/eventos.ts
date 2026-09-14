@@ -160,6 +160,25 @@ export async function eventosRoutes(app: FastifyInstance): Promise<void> {
     },
   )
 
+  // DELETE /:eventoId — apagar evento e todos os dados (coordenador)
+  app.delete(
+    '/:eventoId',
+    { preHandler: [authenticate, authorize(['coordenador'])] },
+    async (request, reply) => {
+      const params = request.params as { eventoId: string }
+      if (!uuidSchema.safeParse(params.eventoId).success) {
+        return reply.status(400).send({ error: 'ID invalido' })
+      }
+      try {
+        await eventoService.apagar(params.eventoId)
+        return reply.status(204).send()
+      } catch (err) {
+        request.log.error({ err }, 'Erro ao apagar evento')
+        return reply.status(500).send({ error: 'Erro interno' })
+      }
+    },
+  )
+
   // POST /:eventoId/usuarios — adicionar usuario ao evento (coordenador)
   app.post(
     '/:eventoId/usuarios',

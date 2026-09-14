@@ -84,6 +84,10 @@ export async function atualizarEvento(
   return data
 }
 
+export async function apagarEvento(id: string): Promise<void> {
+  await api.delete(`/api/eventos/${id}`)
+}
+
 export async function arquivarEvento(id: string): Promise<Evento> {
   const { data } = await api.post<Evento>(`/api/eventos/${id}/arquivar`)
   return data
