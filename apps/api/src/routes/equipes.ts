@@ -143,6 +143,26 @@ export async function equipesRoutes(app: FastifyInstance): Promise<void> {
     },
   )
 
+  // DELETE /:equipeId — apagar equipe
+  app.delete(
+    '/:equipeId',
+    { preHandler: [authenticate, authorize(['coordenador', 'lider'])] },
+    async (request, reply) => {
+      const params = request.params as { eventoId: string; equipeId: string }
+      if (!uuidSchema.safeParse(params.equipeId).success) {
+        return reply.status(400).send({ error: 'ID invalido' })
+      }
+      try {
+        const deleted = await equipeService.deletar(params.equipeId)
+        if (!deleted) return reply.status(404).send({ error: 'Equipe nao encontrada' })
+        return reply.status(204).send()
+      } catch (err) {
+        request.log.error({ err }, 'Erro ao apagar equipe')
+        return reply.status(500).send({ error: 'Erro interno' })
+      }
+    },
+  )
+
   // POST /:equipeId/membros — adicionar membro
   app.post(
     '/:equipeId/membros',
@@ -166,17 +186,17 @@ export async function equipesRoutes(app: FastifyInstance): Promise<void> {
     },
   )
 
-  // DELETE /:equipeId/membros/:voluntarioId — remover membro
+  // DELETE /:equipeId/membros/:membroId — remover membro pelo id do vinculo
   app.delete(
-    '/:equipeId/membros/:voluntarioId',
+    '/:equipeId/membros/:membroId',
     { preHandler: [authenticate, authorize(['coordenador', 'lider'])] },
     async (request, reply) => {
-      const params = request.params as { eventoId: string; equipeId: string; voluntarioId: string }
-      if (!uuidSchema.safeParse(params.equipeId).success || !uuidSchema.safeParse(params.voluntarioId).success) {
+      const params = request.params as { eventoId: string; equipeId: string; membroId: string }
+      if (!uuidSchema.safeParse(params.equipeId).success || !uuidSchema.safeParse(params.membroId).success) {
         return reply.status(400).send({ error: 'ID invalido' })
       }
       try {
-        await equipeService.removerMembro(params.equipeId, params.voluntarioId)
+        await equipeService.removerMembro(params.membroId)
         return reply.status(204).send()
       } catch (err) {
         request.log.error({ err }, 'Erro ao remover membro')

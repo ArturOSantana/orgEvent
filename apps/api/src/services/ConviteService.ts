@@ -110,13 +110,16 @@ export class ConviteService {
 
     const membro = membros[0] ?? null
 
+    // eventoId: via equipe (se tiver) ou direto no voluntário
+    const eventoIdResolvido = membro?.eventoId ?? vol.eventoId ?? null
+
     // Busca dados do evento (nome, datas, local)
     let eventoNome: string | null = null
     let eventoDataInicio: Date | null = null
     let eventoDataFim: Date | null = null
     let eventoLocal: string | null = null
 
-    if (membro?.eventoId) {
+    if (eventoIdResolvido) {
       const [evento] = await db
         .select({
           nome: eventos.nome,
@@ -125,7 +128,7 @@ export class ConviteService {
           local: eventos.local,
         })
         .from(eventos)
-        .where(eq(eventos.id, membro.eventoId))
+        .where(eq(eventos.id, eventoIdResolvido))
         .limit(1)
 
       if (evento) {
@@ -146,7 +149,7 @@ export class ConviteService {
       visualizadoEm: vol.visualizadoEm ?? null,
       equipeNome: membro?.equipeNome ?? null,
       funcaoNome: membro?.funcaoNome ?? null,
-      eventoId: membro?.eventoId ?? null,
+      eventoId: eventoIdResolvido,
       eventoNome,
       eventoDataInicio,
       eventoDataFim,

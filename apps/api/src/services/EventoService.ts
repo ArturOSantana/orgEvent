@@ -5,6 +5,7 @@ import {
   eventoUsuarios,
   usuarios,
   participantes,
+  quartos,
   equipes,
   equipeVoluntarios,
   funcoes,
@@ -217,7 +218,9 @@ export class EventoService {
 
       // 10. Participantes
       await tx.delete(participantes).where(eq(participantes.eventoId, id))
-      // 11. Equipes
+      // 11. Quartos
+      await tx.delete(quartos).where(eq(quartos.eventoId, id))
+      // 12. Equipes
       await tx.delete(equipes).where(eq(equipes.eventoId, id))
       // 12. Funcoes
       await tx.delete(funcoes).where(eq(funcoes.eventoId, id))

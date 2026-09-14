@@ -1,4 +1,4 @@
-import { eq, and, sql } from 'drizzle-orm'
+import { eq, sql } from 'drizzle-orm'
 import { db } from '../db/index.js'
 import { equipes, equipeVoluntarios, funcoes, voluntarios } from '../db/schema/index.js'
 
@@ -61,28 +61,25 @@ export class EquipeService {
     return updated ?? null
   }
 
+  async deletar(id: string) {
+    await db.delete(equipeVoluntarios).where(eq(equipeVoluntarios.equipeId, id))
+    const [deleted] = await db.delete(equipes).where(eq(equipes.id, id)).returning()
+    return deleted ?? null
+  }
+
   async adicionarMembro(equipeId: string, voluntarioId: string, funcaoId?: string) {
-    // Upsert: ignora conflito de chave unica equipe+voluntario
     const [row] = await db
       .insert(equipeVoluntarios)
       .values({ equipeId, voluntarioId, funcaoId: funcaoId ?? null })
-      .onConflictDoUpdate({
-        target: [equipeVoluntarios.equipeId, equipeVoluntarios.voluntarioId],
-        set: { funcaoId: funcaoId ?? null },
-      })
+      .onConflictDoNothing()
       .returning()
     return row
   }
 
-  async removerMembro(equipeId: string, voluntarioId: string) {
+  async removerMembro(membroId: string) {
     await db
       .delete(equipeVoluntarios)
-      .where(
-        and(
-          eq(equipeVoluntarios.equipeId, equipeId),
-          eq(equipeVoluntarios.voluntarioId, voluntarioId),
-        ),
-      )
+      .where(eq(equipeVoluntarios.id, membroId))
   }
 
   async listarFuncoes(eventoId: string) {

@@ -13,19 +13,25 @@ const criarParticipanteSchema = z.object({
   obs: z.string().optional(),
   status: z.enum(['confirmado', 'pendente', 'cancelado']).optional(),
   equipeId: z.string().uuid().optional(),
+  quartoId: z.string().uuid().optional(),
 })
 
 const atualizarParticipanteSchema = z.object({
   nome: z.string().min(1).max(200).optional(),
-  email: z.string().email().optional(),
-  telefone: z.string().max(20).optional(),
-  obs: z.string().optional(),
+  email: z.string().email().optional().nullable(),
+  telefone: z.string().max(20).optional().nullable(),
+  obs: z.string().optional().nullable(),
   status: z.enum(['confirmado', 'pendente', 'cancelado']).optional(),
-  equipeId: z.string().uuid().optional(),
+  equipeId: z.string().uuid().optional().nullable(),
+  quartoId: z.string().uuid().optional().nullable(),
 })
 
 const alocarEquipeSchema = z.object({
-  equipeId: z.string().uuid(),
+  equipeId: z.string().uuid().nullable(),
+})
+
+const alocarQuartoSchema = z.object({
+  quartoId: z.string().uuid().nullable(),
 })
 
 const importarCsvSchema = z.object({
@@ -41,6 +47,7 @@ const importarCsvSchema = z.object({
 const filtrosListarSchema = z.object({
   busca: z.string().optional(),
   equipeId: z.string().uuid().optional(),
+  quartoId: z.string().uuid().optional(),
   status: z.string().optional(),
   page: z.coerce.number().int().positive().optional(),
   limit: z.coerce.number().int().positive().optional(),
@@ -152,6 +159,26 @@ export async function participantesRoutes(app: FastifyInstance): Promise<void> {
     },
   )
 
+  // DELETE /:id — excluir participante
+  app.delete(
+    '/:id',
+    { preHandler: [authenticate, authorize(['coordenador', 'lider'])] },
+    async (request, reply) => {
+      const params = request.params as { id: string }
+      if (!uuidSchema.safeParse(params.id).success) {
+        return reply.status(400).send({ error: 'ID invalido' })
+      }
+      try {
+        const deleted = await participanteService.remover(params.id)
+        if (!deleted) return reply.status(404).send({ error: 'Participante nao encontrado' })
+        return reply.status(200).send({ ok: true })
+      } catch (err) {
+        request.log.error({ err }, 'Erro ao remover participante')
+        return reply.status(500).send({ error: 'Erro interno' })
+      }
+    },
+  )
+
   // POST /:id/equipe — alocar em equipe
   app.post(
     '/:id/equipe',
@@ -171,6 +198,30 @@ export async function participantesRoutes(app: FastifyInstance): Promise<void> {
         return reply.status(200).send(updated)
       } catch (err) {
         request.log.error({ err }, 'Erro ao alocar participante em equipe')
+        return reply.status(500).send({ error: 'Erro interno' })
+      }
+    },
+  )
+
+  // POST /:id/quarto — alocar em quarto
+  app.post(
+    '/:id/quarto',
+    { preHandler: [authenticate, authorize(['coordenador', 'lider'])] },
+    async (request, reply) => {
+      const params = request.params as { id: string }
+      if (!uuidSchema.safeParse(params.id).success) {
+        return reply.status(400).send({ error: 'ID invalido' })
+      }
+      const result = alocarQuartoSchema.safeParse(request.body)
+      if (!result.success) {
+        return reply.status(400).send({ error: 'Dados invalidos', detalhes: result.error.flatten().fieldErrors })
+      }
+      try {
+        const updated = await participanteService.alocarQuarto(params.id, result.data.quartoId)
+        if (!updated) return reply.status(404).send({ error: 'Participante nao encontrado' })
+        return reply.status(200).send(updated)
+      } catch (err) {
+        request.log.error({ err }, 'Erro ao alocar participante em quarto')
         return reply.status(500).send({ error: 'Erro interno' })
       }
     },

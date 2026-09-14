@@ -10,6 +10,7 @@ import { CronogramaPage } from '../pages/CronogramaPage'
 import { EquipesPage } from '../pages/EquipesPage'
 import { VoluntariosPage } from '../pages/VoluntariosPage'
 import { ParticipantesPage } from '../pages/ParticipantesPage'
+import { QuartosPage } from '../pages/QuartosPage'
 import { MateriaisPage } from '../pages/MateriaisPage'
 import { InscricoesPage } from '../pages/InscricoesPage'
 import { FormularioEditorPage } from '../pages/FormularioEditorPage'
@@ -89,6 +90,10 @@ export const router = createBrowserRouter([
               {
                 path: 'participantes',
                 element: <ParticipantesPage />,
+              },
+              {
+                path: 'quartos',
+                element: <QuartosPage />,
               },
               {
                 path: 'materiais',

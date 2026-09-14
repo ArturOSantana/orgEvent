@@ -6,6 +6,7 @@ import {
   TeamOutlined,
   UserOutlined,
   UsergroupAddOutlined,
+  HomeOutlined,
   ShoppingCartOutlined,
   LogoutOutlined,
 } from '@ant-design/icons'
@@ -27,6 +28,7 @@ const SUB_NAV_ITEMS = [
   { key: 'equipes', label: 'Equipes', icon: <TeamOutlined /> },
   { key: 'voluntarios', label: 'Voluntários', icon: <UserOutlined /> },
   { key: 'participantes', label: 'Participantes', icon: <UsergroupAddOutlined /> },
+  { key: 'quartos', label: 'Quartos', icon: <HomeOutlined /> },
   { key: 'materiais', label: 'Materiais', icon: <ShoppingCartOutlined /> },
 ]
 

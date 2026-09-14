@@ -14,6 +14,7 @@ import { syncRoutes } from './routes/sync.js'
 import { perfilRoutes } from './routes/perfil.js'
 import { convitesPublicosRoutes } from './routes/convites.js'
 import { formularioRoutes, inscricaoPublicaRoutes } from './routes/inscricao.js'
+import { quartosRoutes } from './routes/quartos.js'
 
 export const app = Fastify({ logger: true })
 
@@ -52,6 +53,9 @@ app.register(voluntariosRoutes, { prefix: '/api/eventos/:eventoId/voluntarios' }
 
 // Rotas de participantes (aninhadas em eventos)
 app.register(participantesRoutes, { prefix: '/api/eventos/:eventoId/participantes' })
+
+// Rotas de quartos (aninhadas em eventos)
+app.register(quartosRoutes, { prefix: '/api/eventos/:eventoId/quartos' })
 
 // Rotas de materiais e observacoes (aninhadas em eventos)
 app.register(materiaisRoutes, { prefix: '/api/eventos/:eventoId/materiais' })

@@ -160,6 +160,7 @@ export function EventoDetailPage() {
     { label: 'Equipes', path: `/eventos/${eventoId}/equipes` },
     { label: 'Voluntários', path: `/eventos/${eventoId}/voluntarios` },
     { label: 'Participantes', path: `/eventos/${eventoId}/participantes` },
+    { label: 'Quartos', path: `/eventos/${eventoId}/quartos` },
     { label: 'Materiais', path: `/eventos/${eventoId}/materiais` },
     { label: 'Inscrições', path: `/eventos/${eventoId}/inscricoes` },
   ]

@@ -12,6 +12,9 @@ export interface Participante {
   status: ParticipanteStatus
   equipeId?: string
   equipe?: { id: string; nome: string }
+  quartoId?: string
+  quarto?: { id: string; nome: string }
+  inscricaoId?: string
   checkinEm?: string | null
   criadoEm: string
   atualizadoEm: string
@@ -23,11 +26,14 @@ export interface CriarParticipantePayload {
   email?: string
   obs?: string
   status?: ParticipanteStatus
+  equipeId?: string
+  quartoId?: string
 }
 
 export interface ListarParticipantesFiltros {
   busca?: string
   equipeId?: string
+  quartoId?: string
   status?: string
   page?: number
   limit?: number
@@ -79,11 +85,33 @@ export async function atualizarParticipante(
 export async function alocarEquipe(
   eventoId: string,
   id: string,
-  equipeId: string,
+  equipeId: string | null,
 ): Promise<Participante> {
   const { data } = await api.post<Participante>(
     `/api/eventos/${eventoId}/participantes/${id}/equipe`,
     { equipeId },
+  )
+  return data
+}
+
+export async function alocarQuarto(
+  eventoId: string,
+  id: string,
+  quartoId: string | null,
+): Promise<Participante> {
+  const { data } = await api.post<Participante>(
+    `/api/eventos/${eventoId}/participantes/${id}/quarto`,
+    { quartoId },
+  )
+  return data
+}
+
+export async function removerParticipante(
+  eventoId: string,
+  id: string,
+): Promise<{ ok: boolean }> {
+  const { data } = await api.delete<{ ok: boolean }>(
+    `/api/eventos/${eventoId}/participantes/${id}`,
   )
   return data
 }

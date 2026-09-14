@@ -31,6 +31,7 @@ export function EquipesPage() {
 
   // Modais
   const [modalEquipeAberto, setModalEquipeAberto] = useState(false)
+  const [equipeParaEditar, setEquipeParaEditar] = useState<Equipe | undefined>(undefined)
   const [modalFuncaoAberto, setModalFuncaoAberto] = useState(false)
 
   const carregar = useCallback(async () => {
@@ -66,6 +67,17 @@ export function EquipesPage() {
       return [...prev, equipe]
     })
     setModalEquipeAberto(false)
+    setEquipeParaEditar(undefined)
+  }
+
+  function handleEditarEquipe(equipe: Equipe) {
+    setEquipeParaEditar(equipe)
+    setModalEquipeAberto(true)
+  }
+
+  function handleEquipeApagada(id: string) {
+    setEquipes((prev) => prev.filter((e) => e.id !== id))
+    setEquipeDetalheId(null)
   }
 
   function handleFuncaoCriada(funcao: Funcao) {
@@ -181,6 +193,8 @@ export function EquipesPage() {
                 equipeId={equipeDetalheId}
                 podeEditar={podeEditar}
                 onClose={() => setEquipeDetalheId(null)}
+                onEditar={handleEditarEquipe}
+                onApagada={handleEquipeApagada}
               />
             </div>
           )}
@@ -195,16 +209,22 @@ export function EquipesPage() {
             equipeId={equipeDetalheId}
             podeEditar={podeEditar}
             onClose={() => setEquipeDetalheId(null)}
+            onEditar={handleEditarEquipe}
+            onApagada={handleEquipeApagada}
           />
         </div>
       )}
 
-      {/* Modal nova equipe */}
+      {/* Modal nova/editar equipe */}
       {modalEquipeAberto && eventoId && (
         <EquipeForm
           eventoId={eventoId}
+          equipe={equipeParaEditar}
           onSuccess={handleEquipeSalva}
-          onCancel={() => setModalEquipeAberto(false)}
+          onCancel={() => {
+            setModalEquipeAberto(false)
+            setEquipeParaEditar(undefined)
+          }}
         />
       )}
 

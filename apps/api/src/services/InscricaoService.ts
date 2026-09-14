@@ -6,6 +6,7 @@ import {
   inscricoes,
   respostasInscricao,
   usuarios,
+  participantes,
 } from '../db/schema/index.js'
 
 // ── Tipos auxiliares ──────────────────────────────────────────────────────────
@@ -312,6 +313,39 @@ export class InscricaoService {
       })
       .where(eq(inscricoes.id, inscricaoId))
       .returning()
+
+    if (updated) {
+      // Sincroniza: cria ou atualiza o participante correspondente
+      const [partExistente] = await db
+        .select()
+        .from(participantes)
+        .where(eq(participantes.inscricaoId, inscricaoId))
+        .limit(1)
+
+      if (!partExistente) {
+        await db.insert(participantes).values({
+          eventoId: updated.eventoId,
+          nome: updated.nome,
+          email: updated.email,
+          telefone: updated.telefone,
+          status: 'confirmado',
+          inscricaoId: updated.id,
+          obs: updated.obsAdmin ? `Inscrição online - ${updated.obsAdmin}` : 'Inscrição online confirmada',
+        })
+      } else {
+        await db
+          .update(participantes)
+          .set({
+            status: 'confirmado',
+            nome: updated.nome,
+            email: updated.email,
+            telefone: updated.telefone,
+            atualizadoEm: new Date(),
+          })
+          .where(eq(participantes.id, partExistente.id))
+      }
+    }
+
     return updated ?? null
   }
 
@@ -321,19 +355,40 @@ export class InscricaoService {
       .set({ status: 'cancelado', atualizadoEm: new Date() })
       .where(eq(inscricoes.id, inscricaoId))
       .returning()
+
+    if (updated) {
+      await db
+        .update(participantes)
+        .set({ status: 'cancelado', atualizadoEm: new Date() })
+        .where(eq(participantes.inscricaoId, inscricaoId))
+    }
+
     return updated ?? null
   }
 
   async checkinInscricao(inscricaoId: string, adminId: string) {
+    const now = new Date()
     const [updated] = await db
       .update(inscricoes)
       .set({
-        checkinEm: new Date(),
+        checkinEm: now,
         checkinConfirmadoPor: adminId,
-        atualizadoEm: new Date(),
+        atualizadoEm: now,
       })
       .where(eq(inscricoes.id, inscricaoId))
       .returning()
+
+    if (updated) {
+      await db
+        .update(participantes)
+        .set({
+          checkinEm: now,
+          status: 'confirmado',
+          atualizadoEm: now,
+        })
+        .where(eq(participantes.inscricaoId, inscricaoId))
+    }
+
     return updated ?? null
   }
 

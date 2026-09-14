@@ -4,6 +4,7 @@ import {
   ScheduleOutlined,
   TeamOutlined,
   UsergroupAddOutlined,
+  HomeOutlined,
   ShoppingCartOutlined,
 } from '@ant-design/icons'
 import { useEventoStore } from '../../store/eventoStore'
@@ -17,6 +18,7 @@ export function BottomNav() {
         { to: `/eventos/${eventoAtivo.id}/cronograma`, label: 'Cronograma', icon: <ScheduleOutlined /> },
         { to: `/eventos/${eventoAtivo.id}/equipes`, label: 'Equipes', icon: <TeamOutlined /> },
         { to: `/eventos/${eventoAtivo.id}/participantes`, label: 'Participantes', icon: <UsergroupAddOutlined /> },
+        { to: `/eventos/${eventoAtivo.id}/quartos`, label: 'Quartos', icon: <HomeOutlined /> },
         { to: `/eventos/${eventoAtivo.id}/materiais`, label: 'Materiais', icon: <ShoppingCartOutlined /> },
       ]
     : [{ to: '/eventos', label: 'Eventos', icon: <UnorderedListOutlined /> }]

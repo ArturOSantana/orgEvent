@@ -11,6 +11,7 @@ import { gerarMateriaisXLSX } from '../export/MateriaisXLSX.js'
 import { gerarInscricoesXLSX } from '../export/InscricoesXLSX.js'
 import { gerarVoluntariosXLSX } from '../export/VoluntariosXLSX.js'
 import { gerarVoluntariosPDF } from '../export/VoluntariosPDF.js'
+import { gerarQuartoPDF } from '../export/QuartoPDF.js'
 
 const uuidSchema = z.string().uuid()
 
@@ -181,6 +182,28 @@ export async function exportarRoutes(app: FastifyInstance): Promise<void> {
         .send(buffer)
     } catch (err) {
       request.log.error({ err }, 'Erro ao gerar voluntarios.pdf')
+      return reply.status(500).send({ error: 'Erro ao gerar arquivo' })
+    }
+  })
+
+  // GET /quartos/:quartoId.pdf — exportar/imprimir lista do quarto
+  app.get('/quartos/:quartoId.pdf', { preHandler: [authenticate] }, async (request, reply) => {
+    const params = request.params as { eventoId: string; quartoId: string }
+    if (!uuidSchema.safeParse(params.eventoId).success || !uuidSchema.safeParse(params.quartoId).success) {
+      return reply.status(400).send({ error: 'ID invalido' })
+    }
+    const temAcesso = await verificarAcessoEvento(request.user.id, params.eventoId)
+    if (!temAcesso) {
+      return reply.status(403).send({ error: 'Acesso negado' })
+    }
+    try {
+      const buffer = await gerarQuartoPDF(params.eventoId, params.quartoId, db)
+      return reply
+        .header('Content-Type', MIME_PDF)
+        .header('Content-Disposition', `inline; filename="quarto-${params.quartoId}.pdf"`)
+        .send(buffer)
+    } catch (err) {
+      request.log.error({ err }, 'Erro ao gerar quarto.pdf')
       return reply.status(500).send({ error: 'Erro ao gerar arquivo' })
     }
   })

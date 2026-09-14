@@ -18,7 +18,9 @@ import type { Equipe } from '../services/equipeService'
 import { ParticipanteRow } from '../components/participantes/ParticipanteRow'
 import { ParticipanteForm } from '../components/participantes/ParticipanteForm'
 import { AlocarEquipeModal } from '../components/participantes/AlocarEquipeModal'
+import { AlocarQuartoModal } from '../components/participantes/AlocarQuartoModal'
 import { ImportarCsvModal } from '../components/participantes/ImportarCsvModal'
+import { listarQuartos, type Quarto } from '../services/quartoService'
 import { EmptyState } from '../components/ui/EmptyState'
 import { Spinner } from '../components/ui/Spinner'
 import { Button } from '../components/ui/Button'
@@ -46,6 +48,7 @@ export function ParticipantesPage() {
   const [participantes, setParticipantes] = useState<Participante[]>([])
   const [total, setTotal] = useState(0)
   const [equipes, setEquipes] = useState<Equipe[]>([])
+  const [quartos, setQuartos] = useState<Quarto[]>([])
   const [carregando, setCarregando] = useState(true)
   const [erroMsg, setErroMsg] = useState('')
 
@@ -53,6 +56,7 @@ export function ParticipantesPage() {
   const [busca, setBusca] = useState('')
   const [filtroStatus, setFiltroStatus] = useState('')
   const [filtroEquipe, setFiltroEquipe] = useState('')
+  const [filtroQuarto, setFiltroQuarto] = useState('')
   const [page, setPage] = useState(1)
   const [exportando, setExportando] = useState(false)
   const buscaDebounced = useDebounce(busca)
@@ -62,13 +66,17 @@ export function ParticipantesPage() {
   const [participanteEditando, setParticipanteEditando] = useState<Participante | undefined>()
   const [importarAberto, setImportarAberto] = useState(false)
   const [alocarParticipante, setAlocarParticipante] = useState<Participante | null>(null)
+  const [alocarQuartoParticipante, setAlocarQuartoParticipante] = useState<Participante | null>(null)
 
-  // ── Carrega equipes uma vez ─────────────────────────────────────────────────
+  // ── Carrega equipes e quartos ─────────────────────────────────────────────────
   useEffect(() => {
     if (!eventoId) return
     listarEquipes(eventoId)
       .then(setEquipes)
       .catch(() => {/* silencia — equipes sao opcionais nos filtros */})
+    listarQuartos(eventoId)
+      .then(setQuartos)
+      .catch(() => {/* silencia — quartos sao opcionais nos filtros */})
   }, [eventoId])
 
   // ── Carrega participantes ───────────────────────────────────────────────────
@@ -81,6 +89,7 @@ export function ParticipantesPage() {
         busca: buscaDebounced || undefined,
         status: filtroStatus || undefined,
         equipeId: filtroEquipe || undefined,
+        quartoId: filtroQuarto || undefined,
         page,
         limit: LIMIT,
       })
@@ -91,7 +100,7 @@ export function ParticipantesPage() {
     } finally {
       setCarregando(false)
     }
-  }, [eventoId, buscaDebounced, filtroStatus, filtroEquipe, page])
+  }, [eventoId, buscaDebounced, filtroStatus, filtroEquipe, filtroQuarto, page])
 
   useEffect(() => {
     carregar()
@@ -108,6 +117,10 @@ export function ParticipantesPage() {
   }
   function handleFiltroEquipe(v: string) {
     setFiltroEquipe(v)
+    setPage(1)
+  }
+  function handleFiltroQuarto(v: string) {
+    setFiltroQuarto(v)
     setPage(1)
   }
 
@@ -148,6 +161,15 @@ export function ParticipantesPage() {
     carregar()
   }
 
+  function handleAlocarQuartoSucesso() {
+    setAlocarQuartoParticipante(null)
+    carregar()
+  }
+
+  function handleRemoverParticipante() {
+    carregar()
+  }
+
   function handleImportarSucesso() {
     setImportarAberto(false)
     setPage(1)
@@ -177,6 +199,11 @@ export function ParticipantesPage() {
   const equipeOpcoes = [
     { value: '', label: 'Todas as equipes' },
     ...equipes.map((e) => ({ value: e.id, label: e.nome })),
+  ]
+
+  const quartoOpcoes = [
+    { value: '', label: 'Todos os quartos' },
+    ...quartos.map((q) => ({ value: q.id, label: q.nome })),
   ]
 
   const totalCheckins = participantes.filter((p) => p.checkinEm).length
@@ -253,6 +280,15 @@ export function ParticipantesPage() {
             />
           </div>
         )}
+        {quartos.length > 0 && (
+          <div className="min-w-[160px]">
+            <Select
+              options={quartoOpcoes}
+              value={filtroQuarto}
+              onChange={(e) => handleFiltroQuarto(e.target.value)}
+            />
+          </div>
+        )}
       </div>
 
       {/* Erro */}
@@ -310,6 +346,9 @@ export function ParticipantesPage() {
                     Equipe
                   </th>
                   <th className="px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wide">
+                    Quarto
+                  </th>
+                  <th className="px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wide">
                     Acoes
                   </th>
                 </tr>
@@ -322,6 +361,8 @@ export function ParticipantesPage() {
                     eventoId={eventoId ?? ''}
                     onEditar={handleEditar}
                     onAlocar={(part) => setAlocarParticipante(part)}
+                    onAlocarQuarto={(part) => setAlocarQuartoParticipante(part)}
+                    onRemover={handleRemoverParticipante}
                     onCheckin={handleCheckin}
                     podeEditar={podeEditar}
                   />
@@ -390,6 +431,19 @@ export function ParticipantesPage() {
           open={Boolean(alocarParticipante)}
           onClose={() => setAlocarParticipante(null)}
           onSuccess={handleAlocarSucesso}
+        />
+      )}
+
+      {/* Modal: alocar em quarto */}
+      {alocarQuartoParticipante && eventoId && (
+        <AlocarQuartoModal
+          eventoId={eventoId}
+          participanteId={alocarQuartoParticipante.id}
+          participanteNome={alocarQuartoParticipante.nome}
+          quartoAtual={alocarQuartoParticipante.quartoId}
+          open={Boolean(alocarQuartoParticipante)}
+          onClose={() => setAlocarQuartoParticipante(null)}
+          onSuccess={handleAlocarQuartoSucesso}
         />
       )}
     </div>

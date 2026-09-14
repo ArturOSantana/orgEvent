@@ -72,9 +72,10 @@ export const equipeVoluntarios = pgTable(
     criadoEm: timestamp('criado_em').defaultNow().notNull(),
   },
   (t) => [
-    uniqueIndex('equipe_voluntarios_equipe_voluntario_idx').on(
+    uniqueIndex('equipe_voluntarios_equipe_voluntario_funcao_idx').on(
       t.equipeId,
       t.voluntarioId,
+      t.funcaoId,
     ),
   ],
 );

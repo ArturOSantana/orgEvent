@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback } from 'react'
-import { PlusOutlined, FilePdfOutlined, CloseOutlined } from '@ant-design/icons'
+import { PlusOutlined, FilePdfOutlined, CloseOutlined, EditOutlined, DeleteOutlined } from '@ant-design/icons'
 import { Button } from '../ui/Button'
 import { Spinner } from '../ui/Spinner'
 import { EmptyState } from '../ui/EmptyState'
@@ -9,6 +9,7 @@ import {
   buscarEquipe,
   listarFuncoes,
   removerMembro,
+  deletarEquipe,
   exportarEscalasPdfUrl,
 } from '../../services/equipeService'
 import type { Equipe, MembroEquipe, Funcao } from '../../services/equipeService'
@@ -18,9 +19,11 @@ interface EquipeDetailProps {
   equipeId: string
   podeEditar: boolean
   onClose: () => void
+  onEditar?: (equipe: Equipe) => void
+  onApagada?: (equipeId: string) => void
 }
 
-export function EquipeDetail({ eventoId, equipeId, podeEditar, onClose }: EquipeDetailProps) {
+export function EquipeDetail({ eventoId, equipeId, podeEditar, onClose, onEditar, onApagada }: EquipeDetailProps) {
   const [equipe, setEquipe] = useState<Equipe | null>(null)
   const [funcoes, setFuncoes] = useState<Funcao[]>([])
   const [carregando, setCarregando] = useState(true)
@@ -54,7 +57,7 @@ export function EquipeDetail({ eventoId, equipeId, podeEditar, onClose }: Equipe
     )
     if (!confirmado) return
     try {
-      await removerMembro(eventoId, equipeId, membro.voluntarioId)
+      await removerMembro(eventoId, equipeId, membro.id)
       setEquipe((prev) =>
         prev
           ? {
@@ -66,6 +69,21 @@ export function EquipeDetail({ eventoId, equipeId, podeEditar, onClose }: Equipe
       )
     } catch {
       alert('Nao foi possivel remover o membro. Tente novamente.')
+    }
+  }
+
+  async function handleApagarEquipe() {
+    if (!equipe) return
+    const confirmado = window.confirm(
+      `Apagar a equipe "${equipe.nome}"? Todos os membros serao removidos. Esta acao nao pode ser desfeita.`,
+    )
+    if (!confirmado) return
+    try {
+      await deletarEquipe(eventoId, equipeId)
+      onApagada?.(equipeId)
+      onClose()
+    } catch {
+      alert('Nao foi possivel apagar a equipe. Tente novamente.')
     }
   }
 
@@ -114,14 +132,33 @@ export function EquipeDetail({ eventoId, equipeId, podeEditar, onClose }: Equipe
           Exportar Escala PDF
         </Button>
         {podeEditar && (
-          <Button
-            variant="primary"
-            size="sm"
-            icon={<PlusOutlined />}
-            onClick={() => setAdicionarMembroAberto(true)}
-          >
-            Adicionar membro
-          </Button>
+          <>
+            <Button
+              variant="ghost"
+              size="sm"
+              icon={<EditOutlined />}
+              onClick={() => equipe && onEditar?.(equipe)}
+            >
+              Editar
+            </Button>
+            <Button
+              variant="ghost"
+              size="sm"
+              icon={<DeleteOutlined />}
+              onClick={handleApagarEquipe}
+              className="text-red-600 hover:text-red-700 hover:bg-red-50"
+            >
+              Apagar
+            </Button>
+            <Button
+              variant="primary"
+              size="sm"
+              icon={<PlusOutlined />}
+              onClick={() => setAdicionarMembroAberto(true)}
+            >
+              Adicionar membro
+            </Button>
+          </>
         )}
       </div>
 

@@ -63,6 +63,10 @@ export async function atualizarEquipe(
   return data
 }
 
+export async function deletarEquipe(eventoId: string, equipeId: string): Promise<void> {
+  await api.delete(`/api/eventos/${eventoId}/equipes/${equipeId}`)
+}
+
 export async function adicionarMembro(
   eventoId: string,
   equipeId: string,
@@ -79,10 +83,10 @@ export async function adicionarMembro(
 export async function removerMembro(
   eventoId: string,
   equipeId: string,
-  voluntarioId: string,
+  membroId: string,
 ): Promise<void> {
   await api.delete(
-    `/api/eventos/${eventoId}/equipes/${equipeId}/membros/${voluntarioId}`,
+    `/api/eventos/${eventoId}/equipes/${equipeId}/membros/${membroId}`,
   )
 }
 
