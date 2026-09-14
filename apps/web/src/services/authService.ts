@@ -18,6 +18,16 @@ interface RefreshResponse {
 }
 
 /**
+ * Realiza cadastro de novo usuário e já autentica.
+ */
+export async function registrar(nome: string, email: string, senha: string): Promise<LoginResponse> {
+  const { data } = await api.post<LoginResponse>('/auth/registrar', { nome, email, senha })
+  setAccessToken(data.accessToken)
+  localStorage.setItem('rt', data.refreshToken)
+  return data
+}
+
+/**
  * Realiza login. Salva o refreshToken no localStorage e o accessToken em memória.
  * Nunca persiste o accessToken fora da memória.
  */

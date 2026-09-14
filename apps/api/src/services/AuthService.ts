@@ -23,6 +23,67 @@ export interface LoginResult {
 }
 
 export class AuthService {
+  async registrar(nome: string, email: string, senha: string): Promise<LoginResult> {
+    const emailSanitizado = email.trim().toLowerCase()
+    const nomeSanitizado = nome.trim()
+
+    // Verifica se ja existe usuario com este email
+    const [existente] = await db
+      .select({ id: usuarios.id })
+      .from(usuarios)
+      .where(eq(usuarios.email, emailSanitizado))
+      .limit(1)
+
+    if (existente) {
+      throw new Error('EMAIL_JA_CADASTRADO')
+    }
+
+    // Hash da senha com bcrypt (12 rounds)
+    const senhaHash = await bcrypt.hash(senha, 12)
+
+    const [novoUsuario] = await db
+      .insert(usuarios)
+      .values({
+        nome: nomeSanitizado,
+        email: emailSanitizado,
+        senhaHash,
+      })
+      .returning({
+        id: usuarios.id,
+        nome: usuarios.nome,
+        email: usuarios.email,
+      })
+
+    const jwtSecret = getEnv('JWT_SECRET')
+    const jwtRefreshSecret = getEnv('JWT_REFRESH_SECRET')
+
+    const accessToken = jwt.sign(
+      { sub: novoUsuario.id, nome: novoUsuario.nome, email: novoUsuario.email },
+      jwtSecret,
+      { algorithm: 'HS256', expiresIn: '15m' },
+    )
+
+    const refreshToken = jwt.sign(
+      { sub: novoUsuario.id, tipo: 'refresh' },
+      jwtRefreshSecret,
+      { algorithm: 'HS256', expiresIn: '7d' },
+    )
+
+    const expiresAt = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000)
+    await db.insert(refreshTokens).values({
+      usuarioId: novoUsuario.id,
+      token: refreshToken,
+      expiresAt,
+      revogado: false,
+    })
+
+    return {
+      accessToken,
+      refreshToken,
+      usuario: { id: novoUsuario.id, nome: novoUsuario.nome, email: novoUsuario.email },
+    }
+  }
+
   async login(email: string, senha: string): Promise<LoginResult> {
     // Busca usuario pelo email
     const [usuario] = await db

@@ -2,6 +2,7 @@ import { createBrowserRouter, Navigate } from 'react-router-dom'
 import { AppShell } from '../components/layout/AppShell'
 import { ProtectedRoute } from './ProtectedRoute'
 import { LoginPage } from '../pages/LoginPage'
+import { RegistroPage } from '../pages/RegistroPage'
 import { EventosPage } from '../pages/EventosPage'
 import { EventoDetailPage } from '../pages/EventoDetailPage'
 import { EventoDashboardPage } from '../pages/EventoDashboardPage'
@@ -22,6 +23,12 @@ export const router = createBrowserRouter([
   {
     path: '/login',
     element: <LoginPage />,
+  },
+
+  // Rota pública de registro
+  {
+    path: '/registro',
+    element: <RegistroPage />,
   },
 
   // Rota pública de inscrição — sem AppShell, sem ProtectedRoute

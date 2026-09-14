@@ -6,6 +6,12 @@ export function useAuth() {
   const navigate = useNavigate()
   const { usuario, carregando, setUsuario, clearAuth } = useAuthStore()
 
+  async function registrar(nome: string, email: string, senha: string): Promise<void> {
+    const data = await authService.registrar(nome, email, senha)
+    setUsuario(data.usuario)
+    navigate('/eventos', { replace: true })
+  }
+
   async function login(email: string, senha: string): Promise<void> {
     const data = await authService.login(email, senha)
     setUsuario(data.usuario)
@@ -22,6 +28,7 @@ export function useAuth() {
     usuario,
     carregando,
     isAutenticado: usuario !== null,
+    registrar,
     login,
     logout,
   }

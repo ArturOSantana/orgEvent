@@ -260,6 +260,7 @@ export class VoluntarioService {
   }
 
   async remover(id: string) {
+    await db.delete(equipeVoluntarios).where(eq(equipeVoluntarios.voluntarioId, id))
     await db.delete(voluntarios).where(eq(voluntarios.id, id))
   }
 }

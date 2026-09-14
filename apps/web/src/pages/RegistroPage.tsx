@@ -2,25 +2,32 @@ import { useEffect, useState } from 'react'
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { z } from 'zod'
-import { LoginOutlined } from '@ant-design/icons'
-import { useNavigate } from 'react-router-dom'
+import { UserAddOutlined } from '@ant-design/icons'
+import { useNavigate, Link } from 'react-router-dom'
 import { useAuthStore } from '../store/authStore'
 import { useAuth } from '../hooks/useAuth'
 import { Spinner } from '../components/ui/Spinner'
 
-const schema = z.object({
-  email: z.string().email('E-mail inválido'),
-  senha: z.string().min(1, 'Senha obrigatória'),
-})
+const schema = z
+  .object({
+    nome: z.string().min(2, 'Informe seu nome completo'),
+    email: z.string().email('E-mail inválido'),
+    senha: z.string().min(6, 'A senha deve ter no mínimo 6 caracteres'),
+    confirmarSenha: z.string().min(1, 'Confirmação de senha obrigatória'),
+  })
+  .refine((data) => data.senha === data.confirmarSenha, {
+    message: 'As senhas não coincidem',
+    path: ['confirmarSenha'],
+  })
 
 type FormValues = z.infer<typeof schema>
 
-export function LoginPage() {
+export function RegistroPage() {
   const navigate = useNavigate()
   const usuario = useAuthStore((s) => s.usuario)
   const carregando = useAuthStore((s) => s.carregando)
-  const { login } = useAuth()
-  const [erroLogin, setErroLogin] = useState<string | null>(null)
+  const { registrar } = useAuth()
+  const [erroRegistro, setErroRegistro] = useState<string | null>(null)
 
   // Redireciona se já autenticado
   useEffect(() => {
@@ -38,11 +45,16 @@ export function LoginPage() {
   })
 
   async function onSubmit(values: FormValues) {
-    setErroLogin(null)
+    setErroRegistro(null)
     try {
-      await login(values.email, values.senha)
-    } catch {
-      setErroLogin('Credenciais inválidas. Verifique seu e-mail e senha.')
+      await registrar(values.nome, values.email, values.senha)
+    } catch (err: unknown) {
+      const axiosError = err as { response?: { data?: { error?: string } } }
+      if (axiosError?.response?.data?.error) {
+        setErroRegistro(axiosError.response.data.error)
+      } else {
+        setErroRegistro('Não foi possível criar a conta. Tente novamente.')
+      }
     }
   }
 
@@ -62,7 +74,7 @@ export function LoginPage() {
       <div
         className="w-full bg-white rounded-lg p-8"
         style={{
-          maxWidth: 400,
+          maxWidth: 420,
           border: '1px solid #e5e7eb',
           boxShadow: '0 1px 3px 0 rgba(0,0,0,0.07)',
         }}
@@ -73,14 +85,43 @@ export function LoginPage() {
             className="text-2xl font-semibold tracking-tight"
             style={{ color: '#1e3a5f' }}
           >
-            Gestor de Eventos
+            Criar Conta
           </h1>
           <p className="text-sm mt-1" style={{ color: '#57606a' }}>
-            Entre com sua conta para continuar
+            Cadastre-se para acessar e gerenciar eventos
           </p>
         </div>
 
         <form onSubmit={handleSubmit(onSubmit)} noValidate>
+          {/* Campo Nome */}
+          <div className="mb-4">
+            <label
+              htmlFor="nome"
+              className="block text-sm font-medium mb-1"
+              style={{ color: '#1f2328' }}
+            >
+              Nome Completo
+            </label>
+            <input
+              id="nome"
+              type="text"
+              autoComplete="name"
+              {...register('nome')}
+              className="w-full rounded-md px-3 py-2 text-sm outline-none"
+              style={{
+                border: errors.nome ? '1px solid #dc2626' : '1px solid #e5e7eb',
+                color: '#1f2328',
+                backgroundColor: '#fff',
+              }}
+              placeholder="Seu nome"
+            />
+            {errors.nome && (
+              <p className="text-xs mt-1" style={{ color: '#dc2626' }}>
+                {errors.nome.message}
+              </p>
+            )}
+          </div>
+
           {/* Campo Email */}
           <div className="mb-4">
             <label
@@ -111,7 +152,7 @@ export function LoginPage() {
           </div>
 
           {/* Campo Senha */}
-          <div className="mb-6">
+          <div className="mb-4">
             <label
               htmlFor="senha"
               className="block text-sm font-medium mb-1"
@@ -122,7 +163,7 @@ export function LoginPage() {
             <input
               id="senha"
               type="password"
-              autoComplete="current-password"
+              autoComplete="new-password"
               {...register('senha')}
               className="w-full rounded-md px-3 py-2 text-sm outline-none"
               style={{
@@ -130,7 +171,7 @@ export function LoginPage() {
                 color: '#1f2328',
                 backgroundColor: '#fff',
               }}
-              placeholder="••••••••"
+              placeholder="Mínimo 6 caracteres"
             />
             {errors.senha && (
               <p className="text-xs mt-1" style={{ color: '#dc2626' }}>
@@ -139,8 +180,37 @@ export function LoginPage() {
             )}
           </div>
 
-          {/* Erro de login */}
-          {erroLogin && (
+          {/* Campo Confirmar Senha */}
+          <div className="mb-6">
+            <label
+              htmlFor="confirmarSenha"
+              className="block text-sm font-medium mb-1"
+              style={{ color: '#1f2328' }}
+            >
+              Confirmar Senha
+            </label>
+            <input
+              id="confirmarSenha"
+              type="password"
+              autoComplete="new-password"
+              {...register('confirmarSenha')}
+              className="w-full rounded-md px-3 py-2 text-sm outline-none"
+              style={{
+                border: errors.confirmarSenha ? '1px solid #dc2626' : '1px solid #e5e7eb',
+                color: '#1f2328',
+                backgroundColor: '#fff',
+              }}
+              placeholder="Repita a senha"
+            />
+            {errors.confirmarSenha && (
+              <p className="text-xs mt-1" style={{ color: '#dc2626' }}>
+                {errors.confirmarSenha.message}
+              </p>
+            )}
+          </div>
+
+          {/* Erro de registro */}
+          {erroRegistro && (
             <div
               className="mb-4 rounded-md px-3 py-2 text-sm"
               style={{
@@ -149,39 +219,35 @@ export function LoginPage() {
                 color: '#dc2626',
               }}
             >
-              {erroLogin}
+              {erroRegistro}
             </div>
           )}
 
-          {/* Botão Entrar */}
+          {/* Botão Cadastrar */}
           <button
             type="submit"
             disabled={isSubmitting}
-            className="w-full flex items-center justify-center gap-2 rounded-md px-4 py-2 text-sm font-medium text-white transition-opacity disabled:opacity-60"
+            className="w-full flex items-center justify-center gap-2 rounded-md px-4 py-2 text-sm font-medium text-white transition-opacity disabled:opacity-60 cursor-pointer"
             style={{ backgroundColor: '#1e3a5f' }}
           >
             {isSubmitting ? (
               <Spinner className="w-4 h-4 text-white" />
             ) : (
-              <LoginOutlined />
+              <UserAddOutlined />
             )}
-            Entrar
+            Cadastrar
           </button>
 
-          {/* Link para Criar Conta */}
+          {/* Link para Login */}
           <div className="mt-4 text-center">
             <p className="text-xs text-gray-500">
-              Não tem uma conta?{' '}
-              <a
-                href="/registro"
-                onClick={(e) => {
-                  e.preventDefault()
-                  navigate('/registro')
-                }}
+              Já tem uma conta?{' '}
+              <Link
+                to="/login"
                 className="font-medium text-[#1e3a5f] hover:underline"
               >
-                Cadastre-se
-              </a>
+                Fazer login
+              </Link>
             </p>
           </div>
         </form>

@@ -53,8 +53,13 @@ export function AdicionarUsuarioModal({
       await adicionarUsuario(eventoId, email.trim(), perfil)
       resetForm()
       onClose()
-    } catch {
-      setEmailErro('Nao foi possivel adicionar o colaborador. Verifique o e-mail e tente novamente.')
+    } catch (err: unknown) {
+      const axiosError = err as { response?: { status?: number; data?: { error?: string } } }
+      if (axiosError?.response?.status === 404 || axiosError?.response?.data?.error === 'Usuario nao encontrado') {
+        setEmailErro('Usuário não encontrado. Peça para o colaborador se cadastrar primeiro na tela de login.')
+      } else {
+        setEmailErro('Não foi possível adicionar o colaborador. Tente novamente.')
+      }
     } finally {
       setCarregando(false)
     }
@@ -82,9 +87,15 @@ export function AdicionarUsuarioModal({
           type="email"
           placeholder="colaborador@exemplo.com"
           value={email}
-          onChange={(e) => setEmail(e.target.value)}
+          onChange={(e) => {
+            setEmail(e.target.value)
+            if (emailErro) setEmailErro('')
+          }}
           error={emailErro}
         />
+        <p className="text-xs text-gray-500 -mt-2">
+          O colaborador precisa ter uma conta cadastrada no sistema com este e-mail.
+        </p>
         <Select
           label="Perfil"
           options={PERFIL_OPTIONS}

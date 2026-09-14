@@ -106,7 +106,7 @@ export async function gerarConvite(
 }
 
 // Busca convite público — sem token de autenticação
-const apiBase = import.meta.env.VITE_API_URL || 'http://127.0.0.1:3001'
+const apiBase = import.meta.env.VITE_API_URL || (import.meta.env.PROD ? '' : 'http://127.0.0.1:3001')
 
 export async function buscarConvitePublico(slug: string): Promise<ConvitePublico> {
   const { data } = await axios.get<ConvitePublico>(`${apiBase}/api/convites/${slug}`)
