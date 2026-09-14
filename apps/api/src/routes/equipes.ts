@@ -34,7 +34,11 @@ export async function equipesRoutes(app: FastifyInstance): Promise<void> {
       return reply.status(400).send({ error: 'ID invalido' })
     }
     try {
-      const data = await equipeService.listar(params.eventoId)
+      const rows = await equipeService.listar(params.eventoId)
+      const data = rows.map(({ totalMembros, ...rest }) => ({
+        ...rest,
+        _count: { membros: totalMembros },
+      }))
       return reply.status(200).send(data)
     } catch (err) {
       request.log.error({ err }, 'Erro ao listar equipes')
