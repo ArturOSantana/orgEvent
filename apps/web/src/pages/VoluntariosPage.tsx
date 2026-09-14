@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback } from 'react'
 import { useParams } from 'react-router-dom'
 import { BotaoVoltar } from '../components/ui/BotaoVoltar'
-import { PlusOutlined, CopyOutlined, LinkOutlined, UserOutlined } from '@ant-design/icons'
+import { PlusOutlined, CopyOutlined, LinkOutlined, UserOutlined, FileExcelOutlined, FilePdfOutlined } from '@ant-design/icons'
 import { useDebounce } from '../hooks/useDebounce'
 import {
   listarVoluntarios,
@@ -15,6 +15,7 @@ import { Spinner } from '../components/ui/Spinner'
 import { Button } from '../components/ui/Button'
 import { Input } from '../components/ui/Input'
 import { useAuthStore } from '../store/authStore'
+import { exportarArquivo } from '../utils/exportar'
 
 // ── Badge de status de convite ─────────────────────────────────────────────────
 
@@ -78,6 +79,8 @@ export function VoluntariosPage() {
 
   // Geração de convite — rastreia qual ID está sendo gerado
   const [gerandoConvite, setGerandoConvite] = useState<string | null>(null)
+  // Exportação
+  const [exportando, setExportando] = useState<'xlsx' | 'pdf' | null>(null)
   // Toast
   const [toastMsg, setToastMsg] = useState('')
 
@@ -162,6 +165,32 @@ export function VoluntariosPage() {
     }
   }
 
+  async function exportarExcel() {
+    if (!eventoId) return
+    setExportando('xlsx')
+    try {
+      await exportarArquivo(
+        `/api/eventos/${eventoId}/exportar/voluntarios.xlsx`,
+        'voluntarios.xlsx',
+      )
+    } finally {
+      setExportando(null)
+    }
+  }
+
+  async function exportarPDF() {
+    if (!eventoId) return
+    setExportando('pdf')
+    try {
+      await exportarArquivo(
+        `/api/eventos/${eventoId}/exportar/voluntarios.pdf`,
+        'voluntarios.pdf',
+      )
+    } finally {
+      setExportando(null)
+    }
+  }
+
   function copiarLink(url: string) {
     if (navigator.clipboard) {
       navigator.clipboard.writeText(url).then(() => mostrarToast('Link copiado!'))
@@ -184,15 +213,33 @@ export function VoluntariosPage() {
       {/* Cabeçalho */}
       <div className="flex flex-wrap items-center justify-between gap-3">
         <h1 className="text-xl font-bold text-gray-900">Voluntários</h1>
-        {podeEditar && (
+        <div className="flex items-center gap-2 flex-wrap">
           <Button
-            variant="primary"
-            icon={<PlusOutlined />}
-            onClick={abrirNovoVoluntario}
+            variant="ghost"
+            icon={<FileExcelOutlined />}
+            onClick={exportarExcel}
+            loading={exportando === 'xlsx'}
           >
-            Novo Voluntário
+            Excel
           </Button>
-        )}
+          <Button
+            variant="ghost"
+            icon={<FilePdfOutlined />}
+            onClick={exportarPDF}
+            loading={exportando === 'pdf'}
+          >
+            PDF
+          </Button>
+          {podeEditar && (
+            <Button
+              variant="primary"
+              icon={<PlusOutlined />}
+              onClick={abrirNovoVoluntario}
+            >
+              Novo Voluntário
+            </Button>
+          )}
+        </div>
       </div>
 
       {/* Busca */}

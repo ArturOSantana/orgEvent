@@ -9,6 +9,8 @@ import { gerarEscalasPDF } from '../export/EscalasPDF.js'
 import { gerarParticipantesXLSX } from '../export/ParticipantesXLSX.js'
 import { gerarMateriaisXLSX } from '../export/MateriaisXLSX.js'
 import { gerarInscricoesXLSX } from '../export/InscricoesXLSX.js'
+import { gerarVoluntariosXLSX } from '../export/VoluntariosXLSX.js'
+import { gerarVoluntariosPDF } from '../export/VoluntariosPDF.js'
 
 const uuidSchema = z.string().uuid()
 
@@ -135,6 +137,50 @@ export async function exportarRoutes(app: FastifyInstance): Promise<void> {
         .send(buffer)
     } catch (err) {
       request.log.error({ err }, 'Erro ao gerar materiais.xlsx')
+      return reply.status(500).send({ error: 'Erro ao gerar arquivo' })
+    }
+  })
+
+  // GET /voluntarios.xlsx
+  app.get('/voluntarios.xlsx', { preHandler: [authenticate] }, async (request, reply) => {
+    const params = request.params as { eventoId: string }
+    if (!uuidSchema.safeParse(params.eventoId).success) {
+      return reply.status(400).send({ error: 'ID invalido' })
+    }
+    const temAcesso = await verificarAcessoEvento(request.user.id, params.eventoId)
+    if (!temAcesso) {
+      return reply.status(403).send({ error: 'Acesso negado' })
+    }
+    try {
+      const buffer = await gerarVoluntariosXLSX(params.eventoId, db)
+      return reply
+        .header('Content-Type', MIME_XLSX)
+        .header('Content-Disposition', 'attachment; filename="voluntarios.xlsx"')
+        .send(buffer)
+    } catch (err) {
+      request.log.error({ err }, 'Erro ao gerar voluntarios.xlsx')
+      return reply.status(500).send({ error: 'Erro ao gerar arquivo' })
+    }
+  })
+
+  // GET /voluntarios.pdf
+  app.get('/voluntarios.pdf', { preHandler: [authenticate] }, async (request, reply) => {
+    const params = request.params as { eventoId: string }
+    if (!uuidSchema.safeParse(params.eventoId).success) {
+      return reply.status(400).send({ error: 'ID invalido' })
+    }
+    const temAcesso = await verificarAcessoEvento(request.user.id, params.eventoId)
+    if (!temAcesso) {
+      return reply.status(403).send({ error: 'Acesso negado' })
+    }
+    try {
+      const buffer = await gerarVoluntariosPDF(params.eventoId, db)
+      return reply
+        .header('Content-Type', MIME_PDF)
+        .header('Content-Disposition', 'attachment; filename="voluntarios.pdf"')
+        .send(buffer)
+    } catch (err) {
+      request.log.error({ err }, 'Erro ao gerar voluntarios.pdf')
       return reply.status(500).send({ error: 'Erro ao gerar arquivo' })
     }
   })
